@@ -4,6 +4,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/IScrollGateway.sol";
 import "./interfaces/IL2GasOracle.sol";
+import "hardhat/console.sol";
 
 // https://onthis.xyz
 /*
@@ -17,39 +18,36 @@ import "./interfaces/IL2GasOracle.sol";
 
 contract ScrollBridge is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address public constant SCROLL_GATEWAY =
-        0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6;
+        0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367;
     address public constant L2_RECEPIENT =
-        0xECe2E9A2ED3FD284FF52ba02cF7220E697437ff9;
+        0xa46A62Be5955fB988c868654722Ea780e9EF72b6;
     address public constant FEE_REFUNDER =
         0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367;
     address public constant GAS_PRICE_ORACLE =
         0x987e300fDfb06093859358522a79098848C33852;
-    uint256 public constant GAS_LIMIT = 700000;
+    uint256 public constant GAS_LIMIT = 1_000_000;
 
-    uint256[50] private _gap;    
+    uint256[50] private _gap;
 
     function initialize() public initializer {
         __Ownable_init();
     }
 
     receive() external payable {
-        if (msg.sender != FEE_REFUNDER) {
-            uint256 l2GasPrice = IL2GasOracle(GAS_PRICE_ORACLE).l2BaseFee();
-            uint256 gasLimitCost = GAS_LIMIT * l2GasPrice;
+        uint256 l2GasPrice = IL2GasOracle(GAS_PRICE_ORACLE).l2BaseFee();
+        uint256 gasLimitCost = GAS_LIMIT * l2GasPrice;
 
-            bytes memory swapAndProveLiqudityData = abi.encodeWithSelector(
-                bytes4(keccak256("swapAndProveLiqudity(address)")),
-                msg.sender
-            );
-
-            IScrollGateway(SCROLL_GATEWAY).depositETHAndCall{value: msg.value}(
-                L2_RECEPIENT,
-                msg.value - gasLimitCost,
-                swapAndProveLiqudityData,
-                GAS_LIMIT
-            );
-        } else {
-            payable(tx.origin).transfer(msg.value);
-        }
+        bytes memory swapAndProveLiqudityData = abi.encodeWithSignature(
+            "swapAndProveLiqudity(address)",
+            msg.sender
+        );
+       
+        IScrollGateway(FEE_REFUNDER).sendMessage{value: msg.value}(
+            L2_RECEPIENT,
+            msg.value - gasLimitCost,
+            swapAndProveLiqudityData,
+            GAS_LIMIT,
+            msg.sender
+        );
     }
 }

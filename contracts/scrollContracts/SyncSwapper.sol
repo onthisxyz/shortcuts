@@ -81,6 +81,6 @@ contract SyncSwapper is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     receive() external payable {
-        swapAndProveLiqudity(msg.sender);
+        
     }
 }

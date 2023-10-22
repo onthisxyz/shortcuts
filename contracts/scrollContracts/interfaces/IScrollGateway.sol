@@ -2,10 +2,12 @@
 pragma solidity ^0.8.9;
 
 interface IScrollGateway {
-    function depositETHAndCall(
+   
+   function sendMessage(
         address _to,
-        uint256 _amount,
-        bytes memory _data,
-        uint256 _gasLimit
+        uint256 _value,
+        bytes calldata _message,
+        uint256 _gasLimit,
+        address _refundAddress
     ) external payable;
 }
